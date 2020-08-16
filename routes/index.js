@@ -12,6 +12,7 @@ var ObjectId = require('mongodb').ObjectID;
 module.exports = (db) => {
 
     let obj = { $or: [] }
+
     router.get("/", async (req, res) => {
         const limit = 5
         if (typeof req.query.search !== "undefined" || req.query.pageBrowse) {
@@ -20,19 +21,23 @@ module.exports = (db) => {
             let page = "pageBrowse"
 
             if (req.query.search === "clicked") obj.$or = []
-            if (req.query.checkboxString === "on" && req.query.string.length !== 0) obj.$or.push({ string: `/${req.query.string}/` })
+            if (req.query.checkboxString === "on" && req.query.string.length !== 0) obj.$or.push({ string: new RegExp(req.query.string) })
             if (req.query.checkboxInteger === "on" && req.query.integer.length !== 0) obj.$or.push({ intData: Number(req.query.integer) })
             if (req.query.checkboxFloat === "on" && req.query.float.length !== 0) obj.$or.push({ floatType: Number(req.query.float) })
             if (req.query.checkboxDate === "on" && req.query.startdate.length !== 0 && req.query.enddate !== 0) obj.$or.push({ tanggal: { $gte: req.query.startdate, $lt: req.query.enddate } })
             if (req.query.checkboxBoolean === "on" && req.query.bool !== "Choose...") obj.$or.push({ bool: req.query.bool })
 
             try {
+                if (obj.$or.length == 0) {
+                    res.redirect('/')
+                }
                 let totalRow = await db.collection('webBread').find(obj).count()
                 let currentPageData = await db.collection('webBread').find(obj).limit(limit).skip(skip).toArray()
                 res.render('index', { rows: currentPageData, totalPage: Math.ceil(totalRow / limit), currentPage, nameOfPage: page })
             } catch (error) {
                 console.log(error)
-                res.redirect("/")
+                res.status(500).json({ error: true, message: error })
+
             }
 
 
@@ -52,6 +57,8 @@ module.exports = (db) => {
                 res.render('index', { rows: currentPageData, totalPage: Math.ceil(totalRow / limit), currentPage, nameOfPage: page })
             } catch (error) {
                 console.log(error)
+                res.status(500).json({ error: true, message: error })
+
             }
 
 
@@ -84,7 +91,10 @@ module.exports = (db) => {
                 console.log(isi.result)
                 res.redirect("/")
             })
-            .catch(err => console.log(err))
+            .catch(err => {
+                console.log(err)
+                res.status(500).json({ error: true, message: error })
+            })
     })
 
     router.get("/edit/:id", async (req, res) => {
@@ -98,6 +108,8 @@ module.exports = (db) => {
             })
         } catch (error) {
             console.log(error)
+            res.status(500).json({ error: true, message: error })
+
         }
 
 
@@ -113,6 +125,8 @@ module.exports = (db) => {
 
         } catch (err) {
             console.log(err)
+            res.status(500).json({ error: true, message: error })
+
         }
 
     })
@@ -132,6 +146,8 @@ module.exports = (db) => {
 
         } catch (error) {
             console.log(error)
+            res.status(500).json({ error: true, message: error })
+
         }
 
 
